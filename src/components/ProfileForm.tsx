@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import StyleQuiz from "@/components/StyleQuiz";
 import type { UserProfile } from "@/lib/types";
 import {
   STYLE_OPTIONS,
@@ -37,6 +38,7 @@ const DEFAULT_PROFILE: UserProfile = {
   personality: [],
   lifestyle: [],
   specialNeeds: "",
+  existingItems: [],
 };
 
 interface Props {
@@ -134,6 +136,7 @@ function TagInput({
 export default function ProfileForm({ onSubmit, loading }: Props) {
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [step, setStep] = useState(0);
+  const [showQuiz, setShowQuiz] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
 
   const update = <K extends keyof UserProfile>(key: K, val: UserProfile[K]) =>
@@ -163,7 +166,7 @@ export default function ProfileForm({ onSubmit, loading }: Props) {
         focusable[idx + 1].focus();
       } else {
         // Last field in this step — advance to next step
-        const isLast = step === 5;
+        const isLast = step === steps.length - 1;
         if (!isLast) {
           setStep((s) => s + 1);
           setTimeout(() => {
@@ -424,6 +427,16 @@ export default function ProfileForm({ onSubmit, loading }: Props) {
       subtitle: "选择最能代表您审美的关键词（最多5个）",
       content: (
         <div className="space-y-6">
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => setShowQuiz(true)}
+              className="btn-gold !text-sm !py-2.5 !px-6"
+            >
+              风格测试 — 用图片发现您的风格DNA
+            </button>
+            <p className="text-xs text-gray-400 mt-2">或在下方手动选择</p>
+          </div>
           <div>
             <p className="section-title">风格方向</p>
             <MultiSelect
@@ -501,6 +514,25 @@ export default function ProfileForm({ onSubmit, loading }: Props) {
         </div>
       ),
     },
+    {
+      title: "我的衣橱",
+      subtitle: "告诉我们您已有的奢侈品单品（可选，方便推荐互补搭配）",
+      content: (
+        <div className="space-y-4">
+          <div>
+            <p className="section-title">已有单品（回车添加）</p>
+            <TagInput
+              value={profile.existingItems}
+              onChange={(v) => update("existingItems", v)}
+              placeholder="例: Hermes Birkin 30 黑色、Chanel 双C耳环"
+            />
+          </div>
+          <p className="text-xs text-gray-400">
+            添加您已拥有的奢侈品单品，AI 将推荐与之互补搭配的新品，避免重复购买。此步骤可跳过。
+          </p>
+        </div>
+      ),
+    },
   ];
 
   const currentStep = steps[step];
@@ -566,6 +598,17 @@ export default function ProfileForm({ onSubmit, loading }: Props) {
           )}
         </div>
       </div>
+
+      {/* Style Quiz Modal */}
+      {showQuiz && (
+        <StyleQuiz
+          onComplete={(tags) => {
+            update("stylePreferences", tags);
+            setShowQuiz(false);
+          }}
+          onClose={() => setShowQuiz(false)}
+        />
+      )}
     </div>
   );
 }

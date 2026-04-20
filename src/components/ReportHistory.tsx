@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { SavedReport } from "@/app/page";
 
 interface Props {
@@ -7,6 +8,7 @@ interface Props {
   onView: (report: SavedReport) => void;
   onDelete: (id: string) => void;
   onNew: () => void;
+  onCompare?: (a: SavedReport, b: SavedReport) => void;
 }
 
 function formatDate(iso: string) {
@@ -34,7 +36,30 @@ function genderLabel(g: string) {
   return g === "male" ? "男" : g === "female" ? "女" : "非二元";
 }
 
-export default function ReportHistory({ reports, onView, onDelete, onNew }: Props) {
+export default function ReportHistory({ reports, onView, onDelete, onNew, onCompare }: Props) {
+  const [compareMode, setCompareMode] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      if (prev.includes(id)) return prev.filter((s) => s !== id);
+      if (prev.length >= 2) return prev;
+      return [...prev, id];
+    });
+  }
+
+  function startCompare() {
+    if (selected.length !== 2 || !onCompare) return;
+    const a = reports.find((r) => r.id === selected[0]);
+    const b = reports.find((r) => r.id === selected[1]);
+    if (a && b) onCompare(a, b);
+  }
+
+  function exitCompareMode() {
+    setCompareMode(false);
+    setSelected([]);
+  }
+
   if (reports.length === 0) {
     return (
       <div className="max-w-2xl mx-auto text-center py-20">
@@ -59,16 +84,57 @@ export default function ReportHistory({ reports, onView, onDelete, onNew }: Prop
             共 {reports.length} 份
           </span>
         </h2>
+        <div className="flex items-center gap-3">
+          {compareMode && selected.length === 2 && (
+            <button
+              onClick={startCompare}
+              className="btn-gold text-sm !py-2 !px-5"
+            >
+              开始对比
+            </button>
+          )}
+          {compareMode && (
+            <span className="text-xs text-gray-400">
+              已选 {selected.length}/2
+            </span>
+          )}
+          {reports.length >= 2 && (
+            <button
+              onClick={compareMode ? exitCompareMode : () => setCompareMode(true)}
+              className={`text-sm px-4 py-2 rounded-lg transition-colors ${
+                compareMode
+                  ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  : "bg-[var(--cream-dark)] text-[var(--noir)] hover:bg-gray-200"
+              }`}
+            >
+              {compareMode ? "取消对比" : "对比"}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {reports.map((report) => (
           <div
             key={report.id}
-            className="card-luxury p-5 cursor-pointer group relative"
-            onClick={() => onView(report)}
+            className={`card-luxury p-5 cursor-pointer group relative ${
+              compareMode && selected.includes(report.id)
+                ? "ring-2 ring-[var(--gold)] bg-[var(--gold-light)]/10"
+                : ""
+            }`}
+            onClick={() => compareMode ? toggleSelect(report.id) : onView(report)}
           >
+            {/* Compare checkbox */}
+            {compareMode && (
+              <div className="absolute top-3 left-3 w-6 h-6 rounded-full border-2 border-[var(--gold)] flex items-center justify-center bg-white">
+                {selected.includes(report.id) && (
+                  <div className="w-3.5 h-3.5 rounded-full bg-[var(--gold)]" />
+                )}
+              </div>
+            )}
+
             {/* Delete button */}
+            {!compareMode && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -78,6 +144,7 @@ export default function ReportHistory({ reports, onView, onDelete, onNew }: Prop
             >
               ×
             </button>
+            )}
 
             {/* Header */}
             <div className="flex items-start gap-3 mb-3">

@@ -38,6 +38,9 @@ export interface UserProfile {
 
   // 特殊需求
   specialNeeds: string;
+
+  // 衣橱已有单品
+  existingItems: string[];
 }
 
 export interface StyleRecommendation {
@@ -57,6 +60,7 @@ export interface RecommendedItem {
   reason: string;
   imageDescription: string;
   purchaseChannel: string;
+  searchQuery?: string;
 }
 
 export interface FullStylingPlan {

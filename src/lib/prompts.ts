@@ -48,6 +48,9 @@ export function buildAnalysisPrompt(profile: UserProfile, category?: string): st
 
 **特殊需求**: ${profile.specialNeeds || "无"}
 
+${profile.existingItems && profile.existingItems.length > 0 ? `**客户已有单品**: ${profile.existingItems.join("、")}
+请推荐与已有单品互补搭配的新品，避免重复。` : ""}
+
 ## 任务
 
 ${categoryInstruction}

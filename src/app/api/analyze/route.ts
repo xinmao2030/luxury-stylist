@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { buildAnalysisPrompt } from "@/lib/prompts";
 import type { UserProfile } from "@/lib/types";
 
@@ -29,52 +29,102 @@ export async function POST(req: NextRequest) {
     });
 
     if (!res.ok) {
-      throw new Error(`Ollama error: ${res.status} ${await res.text()}`);
+      const errText = await res.text();
+      return new Response(
+        `data: ${JSON.stringify({ error: `Ollama error: ${res.status} ${errText}` })}\n\n`,
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            Connection: "keep-alive",
+          },
+        }
+      );
     }
 
-    // Read streaming response and accumulate full text
-    const reader = res.body?.getReader();
-    if (!reader) throw new Error("No response body");
+    const ollamaReader = res.body?.getReader();
+    if (!ollamaReader) {
+      throw new Error("No response body from Ollama");
+    }
 
     const decoder = new TextDecoder();
+    const encoder = new TextEncoder();
     let fullText = "";
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value, { stream: true });
-      for (const line of chunk.split("\n")) {
-        if (!line.trim()) continue;
+    const stream = new ReadableStream({
+      async pull(controller) {
         try {
-          const obj = JSON.parse(line);
-          if (obj.message?.content) {
-            fullText += obj.message.content;
+          while (true) {
+            const { done, value } = await ollamaReader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            for (const line of chunk.split("\n")) {
+              if (!line.trim()) continue;
+              try {
+                const obj = JSON.parse(line);
+                if (obj.message?.content) {
+                  const text = obj.message.content;
+                  fullText += text;
+                  // Send incremental chunk to client
+                  controller.enqueue(
+                    encoder.encode(`data: ${JSON.stringify({ chunk: text })}\n\n`)
+                  );
+                }
+              } catch {
+                // skip malformed lines
+              }
+            }
           }
-        } catch {
-          // skip malformed lines
+
+          // All chunks received — parse the final result
+          let parsed;
+          try {
+            const noThink = fullText.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+            const cleaned = noThink
+              .replace(/```json\n?/g, "")
+              .replace(/```\n?/g, "")
+              .trim();
+            parsed = JSON.parse(cleaned);
+          } catch {
+            parsed = { raw: fullText, parseError: true };
+          }
+
+          // Send final done event with parsed data
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ done: true, data: parsed })}\n\n`)
+          );
+          controller.close();
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Stream error";
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ error: message })}\n\n`)
+          );
+          controller.close();
         }
-      }
-    }
+      },
+    });
 
-    let parsed;
-    try {
-      const noThink = fullText.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
-      const cleaned = noThink
-        .replace(/```json\n?/g, "")
-        .replace(/```\n?/g, "")
-        .trim();
-      parsed = JSON.parse(cleaned);
-    } catch {
-      parsed = { raw: fullText, parseError: true };
-    }
-
-    return NextResponse.json({ success: true, data: parsed });
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json(
-      { success: false, error: message },
-      { status: 500 }
+    return new Response(
+      `data: ${JSON.stringify({ error: message })}\n\n`,
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+        },
+      }
     );
   }
 }

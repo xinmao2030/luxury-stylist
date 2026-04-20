@@ -1,12 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import type { FullStylingPlan, StyleRecommendation, RecommendedItem } from "@/lib/types";
-
-interface ImageResult {
-  full: string;
-  thumb: string;
-}
+import type { FullStylingPlan, StyleRecommendation, RecommendedItem, ImageResult } from "@/lib/types";
+import { fetchImages } from "@/lib/client-utils";
 
 const DAY_NAMES = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
 
@@ -112,14 +108,15 @@ function SmallProductThumb({ item }: { item: RecommendedItem }) {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    const q = `${item.brand} ${item.itemName}`.trim();
-    fetch(`/api/image-search?q=${encodeURIComponent(q + " product")}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.images?.length > 0) setImg(d.images[0]);
+    const controller = new AbortController();
+    const q = `${item.brand} ${item.itemName} product`.trim();
+    fetchImages(q, controller.signal)
+      .then((imgs) => {
+        if (imgs.length > 0) setImg(imgs[0]);
         else setError(true);
       })
-      .catch(() => setError(true));
+      .catch((e) => { if (e.name !== "AbortError") setError(true); });
+    return () => controller.abort();
   }, [item]);
 
   return (

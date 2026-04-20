@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import type { FullStylingPlan } from "@/lib/types";
+import { stripThinkTags } from "@/lib/utils";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -91,8 +92,6 @@ export default function StylistChat({ plan }: Props) {
 
       const decoder = new TextDecoder();
       let accumulated = "";
-      // Track and strip <think> blocks from streamed content
-      let inThink = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -107,20 +106,7 @@ export default function StylistChat({ plan }: Props) {
             const obj = JSON.parse(payload);
             if (obj.content) {
               accumulated += obj.content;
-              // Strip any remaining think tags
-              let display = accumulated;
-              if (display.includes("<think>")) {
-                inThink = true;
-              }
-              if (inThink) {
-                const endIdx = display.indexOf("</think>");
-                if (endIdx >= 0) {
-                  display = display.replace(/<think>[\s\S]*?<\/think>/g, "");
-                  inThink = false;
-                } else {
-                  display = display.replace(/<think>[\s\S]*$/, "");
-                }
-              }
+              const display = stripThinkTags(accumulated);
               setMessages((prev) => {
                 const updated = [...prev];
                 updated[updated.length - 1] = {

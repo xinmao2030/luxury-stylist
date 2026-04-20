@@ -76,7 +76,21 @@ ${categoryInstruction}
           "size": "不适用",
           "reason": "为什么适合这位客户",
           "imageDescription": "发型效果的文字描述",
-          "purchaseChannel": "推荐沙龙/城市"
+          "purchaseChannel": "推荐沙龙/城市",
+          "purchaseChannels": [
+            {
+              "platform": "品牌官网",
+              "region": "international",
+              "estimatedPrice": "$X,XXX",
+              "advantage": "正品保障/独家色"
+            },
+            {
+              "platform": "天猫奢品",
+              "region": "domestic",
+              "estimatedPrice": "¥X,XXX",
+              "advantage": "支持分期/包邮"
+            }
+          ]
         }
       ],
       "stylingTips": "日常打理建议"
@@ -104,5 +118,10 @@ ${categoryInstruction}
 5. stylingTips限30字以内
 6. profileSummary/bodyAnalysis/colorAnalysis/styleDirection各限50字
 7. 男性跳过makeup类别
-8. 直接输出JSON，不要任何解释文字`;
+8. 直接输出JSON，不要任何解释文字
+9. 每个单品的purchaseChannels必须包含2-4个购买渠道，覆盖国内和国际平台
+10. 国内平台优先选择: 天猫奢品、京东奢品、得物(POIZON)、小红书商城、官方微信小程序
+11. 国际平台优先选择: 品牌官网、NET-A-PORTER、FARFETCH、SSENSE、Mytheresa、MatchesFashion
+12. advantage字段限10字以内，突出该渠道核心优势（如"税差30%"、"独家限定"、"支持分期"）
+13. estimatedPrice需根据不同平台实际价差给出差异化报价`;
 }

@@ -1,12 +1,11 @@
 import { NextRequest } from "next/server";
 import { buildAnalysisPrompt } from "@/lib/prompts";
 import type { UserProfile } from "@/lib/types";
+import { OLLAMA_URL, OLLAMA_MODEL, SSE_HEADERS } from "@/lib/constants";
+import { stripThinkTags } from "@/lib/utils";
 
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
-
-const OLLAMA_URL = "http://localhost:11434/api/chat";
-const MODEL = "qwen3:8b";
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,7 +20,7 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: MODEL,
+        model: OLLAMA_MODEL,
         messages: [{ role: "user", content: prompt }],
         stream: true,
         options: { num_predict: 6000, temperature: 0.7, num_ctx: 8192 },
@@ -32,14 +31,7 @@ export async function POST(req: NextRequest) {
       const errText = await res.text();
       return new Response(
         `data: ${JSON.stringify({ error: `Ollama error: ${res.status} ${errText}` })}\n\n`,
-        {
-          status: 200,
-          headers: {
-            "Content-Type": "text/event-stream",
-            "Cache-Control": "no-cache",
-            Connection: "keep-alive",
-          },
-        }
+        { status: 200, headers: SSE_HEADERS }
       );
     }
 
@@ -67,7 +59,6 @@ export async function POST(req: NextRequest) {
                 if (obj.message?.content) {
                   const text = obj.message.content;
                   fullText += text;
-                  // Send incremental chunk to client
                   controller.enqueue(
                     encoder.encode(`data: ${JSON.stringify({ chunk: text })}\n\n`)
                   );
@@ -78,11 +69,9 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          // All chunks received — parse the final result
           let parsed;
           try {
-            const noThink = fullText.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
-            const cleaned = noThink
+            const cleaned = stripThinkTags(fullText)
               .replace(/```json\n?/g, "")
               .replace(/```\n?/g, "")
               .trim();
@@ -91,7 +80,6 @@ export async function POST(req: NextRequest) {
             parsed = { raw: fullText, parseError: true };
           }
 
-          // Send final done event with parsed data
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({ done: true, data: parsed })}\n\n`)
           );
@@ -106,25 +94,12 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return new Response(stream, {
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-      },
-    });
+    return new Response(stream, { headers: SSE_HEADERS });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return new Response(
       `data: ${JSON.stringify({ error: message })}\n\n`,
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
-          Connection: "keep-alive",
-        },
-      }
+      { status: 200, headers: SSE_HEADERS }
     );
   }
 }

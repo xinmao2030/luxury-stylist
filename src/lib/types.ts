@@ -43,10 +43,22 @@ export interface UserProfile {
   existingItems: string[];
 }
 
+export interface ImageResult {
+  full: string;
+  thumb: string;
+}
+
 export interface StyleRecommendation {
   category: string;
   items: RecommendedItem[];
   stylingTips: string;
+}
+
+export interface PurchaseChannel {
+  platform: string;
+  region: "domestic" | "international";
+  estimatedPrice: string;
+  advantage: string;
 }
 
 export interface RecommendedItem {
@@ -60,6 +72,7 @@ export interface RecommendedItem {
   reason: string;
   imageDescription: string;
   purchaseChannel: string;
+  purchaseChannels?: PurchaseChannel[];
   searchQuery?: string;
 }
 

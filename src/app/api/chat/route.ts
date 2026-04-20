@@ -1,10 +1,9 @@
 import { NextRequest } from "next/server";
+import { OLLAMA_URL, OLLAMA_MODEL, SSE_HEADERS } from "@/lib/constants";
+import { stripThinkTags } from "@/lib/utils";
 
 export const maxDuration = 120;
 export const dynamic = "force-dynamic";
-
-const OLLAMA_URL = "http://localhost:11434/api/chat";
-const MODEL = "qwen3:8b";
 
 const SYSTEM_PROMPT =
   "你是LUXURY STYLIST的私人造型顾问，基于已生成的方案回答客户追问。简洁专业。";
@@ -25,7 +24,6 @@ export async function POST(req: NextRequest) {
       ? `${SYSTEM_PROMPT}\n\n以下是客户当前的造型方案摘要:\n${planContext}`
       : SYSTEM_PROMPT;
 
-    // Append /no_think to the last user message
     const ollamaMessages: ChatMessage[] = [
       { role: "system", content: systemContent },
       ...messages.map((m, i) => {
@@ -40,7 +38,7 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: MODEL,
+        model: OLLAMA_MODEL,
         messages: ollamaMessages,
         stream: true,
         options: { num_predict: 2000, temperature: 0.7, num_ctx: 8192 },
@@ -55,7 +53,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Stream SSE back to client
     const reader = res.body?.getReader();
     if (!reader) {
       return new Response(JSON.stringify({ error: "No response body" }), {
@@ -84,14 +81,10 @@ export async function POST(req: NextRequest) {
               try {
                 const obj = JSON.parse(line);
                 if (obj.message?.content) {
-                  // Strip <think> blocks from streamed content
-                  let content = obj.message.content;
-                  content = content.replace(/<think>[\s\S]*?<\/think>/g, "");
+                  const content = stripThinkTags(obj.message.content);
                   if (content) {
                     controller.enqueue(
-                      encoder.encode(
-                        `data: ${JSON.stringify({ content })}\n\n`
-                      )
+                      encoder.encode(`data: ${JSON.stringify({ content })}\n\n`)
                     );
                   }
                 }
@@ -106,13 +99,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return new Response(stream, {
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-      },
-    });
+    return new Response(stream, { headers: SSE_HEADERS });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: message }), {

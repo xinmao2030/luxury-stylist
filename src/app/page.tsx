@@ -7,6 +7,7 @@ import ReportHistory from "@/components/ReportHistory";
 import FavoritesView from "@/components/FavoritesView";
 import CompareView from "@/components/CompareView";
 import type { UserProfile, FullStylingPlan } from "@/lib/types";
+import { localStorageHelper } from "@/lib/utils";
 
 export interface SavedReport {
   id: string;
@@ -17,21 +18,7 @@ export interface SavedReport {
   data: FullStylingPlan;
 }
 
-const STORAGE_KEY = "luxury-stylist-reports";
-
-function loadReports(): SavedReport[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveReports(reports: SavedReport[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
-}
+const { load: loadReports, save: saveReports } = localStorageHelper<SavedReport>("luxury-stylist-reports");
 
 type View = "home" | "form" | "loading" | "results" | "favorites" | "compare";
 
@@ -40,7 +27,6 @@ export default function Home() {
   const [result, setResult] = useState<FullStylingPlan | null>(null);
   const [currentProfile, setCurrentProfile] = useState<UserProfile | null>(null);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
   const [reports, setReports] = useState<SavedReport[]>([]);
   const [streamText, setStreamText] = useState("");
   const streamRef = useRef<HTMLDivElement>(null);
@@ -58,7 +44,6 @@ export default function Home() {
   }, [streamText]);
 
   const handleSubmit = useCallback(async (profile: UserProfile) => {
-    setLoading(true);
     setError("");
     setStreamText("");
     setView("loading");
@@ -123,7 +108,7 @@ export default function Home() {
                 data: evt.data,
               };
 
-              const updated = [report, ...loadReports()];
+              const updated = [report, ...reports];
               saveReports(updated);
               setReports(updated);
 
@@ -153,9 +138,9 @@ export default function Home() {
       setView("form");
       setStreamText("");
     } finally {
-      setLoading(false);
+      // view is already set by success/error handlers
     }
-  }, []);
+  }, [reports]);
 
   function viewReport(report: SavedReport) {
     setResult(report.data);
@@ -250,7 +235,7 @@ export default function Home() {
 
         {/* Form */}
         {view === "form" && (
-          <ProfileForm onSubmit={handleSubmit} loading={loading} />
+          <ProfileForm onSubmit={handleSubmit} loading={false} />
         )}
 
         {/* Loading */}

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import type { ImageResult } from "@/lib/types";
+import { fetchImages } from "@/lib/client-utils";
 
 interface StyleDimension {
   label: string;
@@ -51,11 +53,6 @@ const STYLE_DIMENSIONS: StyleDimension[] = [
   },
 ];
 
-interface ImageResult {
-  full: string;
-  thumb: string;
-}
-
 function QuizRound({
   dimension,
   roundIndex,
@@ -72,21 +69,22 @@ function QuizRound({
   const [selected, setSelected] = useState<"A" | "B" | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     setLoadingA(true);
     setLoadingB(true);
     setSelected(null);
 
-    fetch(`/api/image-search?q=${encodeURIComponent(dimension.optionA.query)}`)
-      .then((r) => r.json())
-      .then((d) => setImagesA((d.images || []).slice(0, 3)))
-      .catch(() => setImagesA([]))
+    fetchImages(dimension.optionA.query, controller.signal)
+      .then((imgs) => setImagesA(imgs.slice(0, 3)))
+      .catch((e) => { if (e.name !== "AbortError") setImagesA([]); })
       .finally(() => setLoadingA(false));
 
-    fetch(`/api/image-search?q=${encodeURIComponent(dimension.optionB.query)}`)
-      .then((r) => r.json())
-      .then((d) => setImagesB((d.images || []).slice(0, 3)))
-      .catch(() => setImagesB([]))
+    fetchImages(dimension.optionB.query, controller.signal)
+      .then((imgs) => setImagesB(imgs.slice(0, 3)))
+      .catch((e) => { if (e.name !== "AbortError") setImagesB([]); })
       .finally(() => setLoadingB(false));
+
+    return () => controller.abort();
   }, [dimension]);
 
   const handleSelect = (side: "A" | "B") => {

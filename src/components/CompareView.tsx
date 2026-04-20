@@ -3,20 +3,7 @@
 import { useState } from "react";
 import type { SavedReport } from "@/app/page";
 import type { StyleRecommendation } from "@/lib/types";
-
-const CATEGORY_ICONS: Record<string, string> = {
-  hair: "💇",
-  makeup: "💄",
-  tops: "👔",
-  bottoms: "👖",
-  dresses: "👗",
-  outerwear: "🧥",
-  bags: "👜",
-  shoes: "👠",
-  accessories: "💍",
-  fragrance: "🌸",
-  watches: "⌚",
-};
+import { CATEGORY_ICONS } from "@/lib/constants";
 
 function SectionCompare({
   label,

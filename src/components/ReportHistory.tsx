@@ -7,6 +7,7 @@ interface Props {
   reports: SavedReport[];
   onView: (report: SavedReport) => void;
   onDelete: (id: string) => void;
+  onDeleteAll?: () => void;
   onNew: () => void;
   onCompare?: (a: SavedReport, b: SavedReport) => void;
 }
@@ -36,7 +37,7 @@ function genderLabel(g: string) {
   return g === "male" ? "男" : g === "female" ? "女" : "非二元";
 }
 
-export default function ReportHistory({ reports, onView, onDelete, onNew, onCompare }: Props) {
+export default function ReportHistory({ reports, onView, onDelete, onDeleteAll, onNew, onCompare }: Props) {
   const [compareMode, setCompareMode] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
 
@@ -110,6 +111,14 @@ export default function ReportHistory({ reports, onView, onDelete, onNew, onComp
               {compareMode ? "取消对比" : "对比"}
             </button>
           )}
+          {onDeleteAll && (
+            <button
+              onClick={() => { if (confirm("确定清除所有方案记录？")) onDeleteAll(); }}
+              className="text-sm px-4 py-2 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
+            >
+              清除全部
+            </button>
+          )}
         </div>
       </div>
 
@@ -162,6 +171,7 @@ export default function ReportHistory({ reports, onView, onDelete, onNew, onComp
             </div>
 
             {/* Profile tags */}
+            {report.profile && (
             <div className="flex flex-wrap gap-1.5 mb-3">
               <span className="px-2 py-0.5 bg-[var(--cream-dark)] rounded text-xs text-gray-600">
                 {genderLabel(report.profile.gender)} · {report.profile.age}岁
@@ -181,16 +191,17 @@ export default function ReportHistory({ reports, onView, onDelete, onNew, onComp
                 </span>
               )}
             </div>
+            )}
 
             {/* Summary */}
             {report.profileSummary && (
               <p className="text-sm text-gray-500 leading-relaxed line-clamp-2">
-                {report.profileSummary}
+                {report.profileSummary.replace(/[^\u0000-\uFFFF]/g, "").slice(0, 200)}
               </p>
             )}
 
             {/* Style tags */}
-            {report.profile.stylePreferences.length > 0 && (
+            {report.profile?.stylePreferences && report.profile.stylePreferences.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-3 pt-3 border-t border-[var(--cream-dark)]">
                 {report.profile.stylePreferences.slice(0, 4).map((s) => (
                   <span

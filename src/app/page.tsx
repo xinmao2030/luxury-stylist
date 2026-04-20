@@ -154,6 +154,11 @@ export default function Home() {
     setReports(updated);
   }
 
+  function deleteAllReports() {
+    saveReports([]);
+    setReports([]);
+  }
+
   function handleCompare(a: SavedReport, b: SavedReport) {
     setCompareReports([a, b]);
     setView("compare");
@@ -228,6 +233,7 @@ export default function Home() {
             reports={reports}
             onView={viewReport}
             onDelete={deleteReport}
+            onDeleteAll={deleteAllReports}
             onNew={() => setView("form")}
             onCompare={handleCompare}
           />

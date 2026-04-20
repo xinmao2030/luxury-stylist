@@ -143,7 +143,14 @@ interface Props {
 }
 
 export default function OutfitCalendar({ data, onClose }: Props) {
-  const outfits = useMemo(() => generateWeeklyOutfits(data), [data]);
+  const outfits = useMemo(() => {
+    try {
+      return generateWeeklyOutfits(data);
+    } catch (e) {
+      console.error("OutfitCalendar generateWeeklyOutfits error:", e);
+      return [];
+    }
+  }, [data]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>

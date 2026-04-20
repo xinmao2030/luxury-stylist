@@ -321,10 +321,10 @@ function StyleMoodboard({ data }: { data: FullStylingPlan }) {
   return (
     <div className="mb-8">
       <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
-        <span className="text-2xl">🎨</span> 整体形象参考
+        <span className="text-2xl">🎨</span> 推荐单品实拍参考
       </h3>
       <p className="text-sm text-gray-500 mb-4">
-        基于您的风格方向和推荐单品搭配的整体造型灵感，共 {images.length} 张参考
+        基于方案推荐的具体品牌和款式搜索的实拍图，共 {images.length} 张参考
       </p>
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
         {images.map((img, i) => (
@@ -373,22 +373,32 @@ function StyleMoodboard({ data }: { data: FullStylingPlan }) {
 
 function buildMoodboardQueries(data: FullStylingPlan): string[] {
   const queries: string[] = [];
-  const style = data.styleDirection || "";
-
-  queries.push(`${style} luxury outfit look`);
-  queries.push(`${style} fashion editorial styling`);
-
   const recs = data.recommendations || {};
-  for (const cat of Object.values(recs) as StyleRecommendation[]) {
-    if (!cat?.items?.length) continue;
-    queries.push(`${cat.items[0].brand} ${cat.items[0].collection} outfit styling`);
-    if (queries.length >= 8) break;
+  const allCats = (Object.values(recs) as StyleRecommendation[]).filter(
+    (c) => c && c.items && c.items.length > 0
+  );
+
+  // Use actual recommended items for specific lookbook images
+  for (const cat of allCats) {
+    for (const item of cat.items) {
+      queries.push(`${item.brand} ${item.itemName} ${item.color || ""} lookbook`.trim());
+      if (queries.length >= 12) break;
+    }
+    if (queries.length >= 12) break;
   }
 
-  queries.push(`luxury fashion ${style} street style`);
-  queries.push(`${style} total look runway`);
+  // Add a few combination outfit queries based on top brands
+  const brands = [...new Set(allCats.flatMap((c) => c.items.map((i) => i.brand)))].slice(0, 3);
+  if (brands.length >= 2) {
+    queries.push(`${brands[0]} ${brands[1]} outfit combination`);
+  }
 
-  return queries.slice(0, 10);
+  const style = data.styleDirection || "";
+  if (style) {
+    queries.push(`${style} complete outfit street style`);
+  }
+
+  return queries.slice(0, 12);
 }
 
 interface Props {
@@ -448,6 +458,10 @@ export default function ResultsView({ data, onBack, profile }: Props) {
   }, [data, categories]);
 
   return (
+    <>
+      {showCalendar && (
+        <OutfitCalendar data={data} onClose={() => setShowCalendar(false)} />
+      )}
     <div className="max-w-5xl mx-auto">
       {shareToast && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-[var(--noir)] text-white px-6 py-3 rounded-xl shadow-lg text-sm font-medium animate-fade-in">
@@ -545,11 +559,8 @@ export default function ResultsView({ data, onBack, profile }: Props) {
         </button>
       </div>
 
-      {showCalendar && (
-        <OutfitCalendar data={data} onClose={() => setShowCalendar(false)} />
-      )}
-
       <StylistChat plan={data} />
     </div>
+    </>
   );
 }

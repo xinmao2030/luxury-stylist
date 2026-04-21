@@ -407,6 +407,15 @@ interface Props {
   profile?: UserProfile;
 }
 
+const CURRENCY_LABELS: Record<CurrencyCode, string> = {
+  USD: "$ USD 美元",
+  CNY: "¥ CNY 人民币",
+  EUR: "€ EUR 欧元",
+  GBP: "£ GBP 英镑",
+  JPY: "¥ JPY 日元",
+  HKD: "HK$ HKD 港币",
+};
+
 const CURRENCY_OPTIONS: CurrencyCode[] = ["USD", "CNY", "EUR", "GBP", "JPY", "HKD"];
 
 export default function ResultsView({ data, onBack, profile }: Props) {
@@ -483,10 +492,11 @@ export default function ResultsView({ data, onBack, profile }: Props) {
             <select
               value={displayCurrency}
               onChange={(e) => setDisplayCurrency(e.target.value as CurrencyCode)}
-              className="bg-white/10 text-white border border-white/20 rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-[var(--gold)]"
+              className="border border-white/20 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-[var(--gold)] min-w-[140px]"
+              style={{ background: "rgba(255,255,255,0.1)", color: "white" }}
             >
               {CURRENCY_OPTIONS.map((c) => (
-                <option key={c} value={c} className="text-black">{c}</option>
+                <option key={c} value={c} className="text-black">{CURRENCY_LABELS[c]}</option>
               ))}
             </select>
           </div>

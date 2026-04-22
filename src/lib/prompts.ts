@@ -111,7 +111,7 @@ ${categoryInstruction}
 }
 
 ## 要求
-1. 每个类别只推荐1-2件单品，简洁为主
+1. 每个类别推荐5-8件单品，提供丰富选择
 2. 品牌和款式必须真实存在
 3. reason字段限20字以内
 4. imageDescription字段限15字以内
@@ -123,5 +123,6 @@ ${categoryInstruction}
 10. 国内平台优先选择: 天猫奢品、京东奢品、得物(POIZON)、小红书商城、官方微信小程序
 11. 国际平台优先选择: 品牌官网、NET-A-PORTER、FARFETCH、SSENSE、Mytheresa、MatchesFashion
 12. advantage字段限10字以内，突出该渠道核心优势（如"税差30%"、"独家限定"、"支持分期"）
-13. estimatedPrice需根据不同平台实际价差给出差异化报价`;
+13. estimatedPrice需根据不同平台实际价差给出差异化报价
+14. 同一类别内推荐的单品应覆盖不同品牌、不同风格、不同价位段，提供从入门到顶级的梯度选择`;
 }

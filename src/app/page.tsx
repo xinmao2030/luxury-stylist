@@ -8,6 +8,7 @@ import FavoritesView from "@/components/FavoritesView";
 import CompareView from "@/components/CompareView";
 import type { UserProfile, FullStylingPlan } from "@/lib/types";
 import { localStorageHelper } from "@/lib/utils";
+import MyWardrobe from "@/components/MyWardrobe";
 
 export interface SavedReport {
   id: string;
@@ -31,6 +32,7 @@ export default function Home() {
   const [streamText, setStreamText] = useState("");
   const streamRef = useRef<HTMLDivElement>(null);
   const [compareReports, setCompareReports] = useState<[SavedReport, SavedReport] | null>(null);
+  const [showWardrobe, setShowWardrobe] = useState(false);
 
   useEffect(() => {
     setReports(loadReports());
@@ -196,6 +198,12 @@ export default function Home() {
             {view === "home" && (
               <>
                 <button
+                  onClick={() => setShowWardrobe(true)}
+                  className="text-[var(--gold-light)] hover:text-white text-sm transition-colors"
+                >
+                  我的衣橱
+                </button>
+                <button
                   onClick={() => setView("favorites")}
                   className="text-[var(--gold-light)] hover:text-white text-sm transition-colors"
                 >
@@ -292,6 +300,10 @@ export default function Home() {
           />
         )}
       </div>
+
+      {showWardrobe && (
+        <MyWardrobe onClose={() => setShowWardrobe(false)} />
+      )}
     </main>
   );
 }

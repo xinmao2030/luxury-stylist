@@ -14,6 +14,11 @@ import {
   type FavoriteItem,
 } from "@/components/FavoritesView";
 import StylistChat from "./StylistChat";
+import CostPerWear from "./CostPerWear";
+import TravelCapsule from "./TravelCapsule";
+import ColorScience from "./ColorScience";
+import OutfitBuilder from "./OutfitBuilder";
+import SmartPurchase from "./SmartPurchase";
 
 type CurrencyCode = "USD" | "CNY" | "EUR" | "GBP" | "JPY" | "HKD";
 
@@ -66,6 +71,7 @@ function FavoriteButton({ item, category }: { item: RecommendedItem; category: s
 function ItemCard({ item, category, convertedPrice }: { item: RecommendedItem; category: string; convertedPrice?: string }) {
   const query = useMemo(() => buildSearchQuery(item), [item]);
   const [showChannels, setShowChannels] = useState(false);
+  const [showSmartPurchase, setShowSmartPurchase] = useState(false);
   const channels = item.purchaseChannels || [];
   const domesticChannels = channels.filter((c) => c.region === "domestic");
   const internationalChannels = channels.filter((c) => c.region === "international");
@@ -212,8 +218,17 @@ function ItemCard({ item, category, convertedPrice }: { item: RecommendedItem; c
               </a>
             </div>
           )}
+          <button
+            onClick={() => setShowSmartPurchase(true)}
+            className="w-full mt-2 px-3 py-2 bg-[var(--noir)] text-[var(--gold-light)] rounded-lg text-sm font-medium hover:bg-[var(--noir-light)] transition-colors"
+          >
+            智能比价
+          </button>
         </div>
       </div>
+      {showSmartPurchase && (
+        <SmartPurchase item={item} onClose={() => setShowSmartPurchase(false)} />
+      )}
     </div>
   );
 }
@@ -428,6 +443,9 @@ export default function ResultsView({ data, onBack, profile }: Props) {
   const [displayCurrency, setDisplayCurrency] = useState<CurrencyCode>(defaultCurrency);
   const [exchangeRates, setExchangeRates] = useState<Record<string, number> | null>(null);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [showTravelCapsule, setShowTravelCapsule] = useState(false);
+  const [showColorScience, setShowColorScience] = useState(false);
+  const [showOutfitBuilder, setShowOutfitBuilder] = useState(false);
   const [shareToast, setShareToast] = useState(false);
 
   useEffect(() => {
@@ -506,8 +524,13 @@ export default function ResultsView({ data, onBack, profile }: Props) {
             <p className="text-[var(--gold-light)] text-xs uppercase tracking-widest mb-2">形象评估</p>
             <p className="text-gray-200 text-sm leading-relaxed">{data.profileSummary}</p>
           </div>
-          <div>
-            <p className="text-[var(--gold-light)] text-xs uppercase tracking-widest mb-2">色彩分析</p>
+          <div
+            className="cursor-pointer hover:bg-white/5 rounded-lg p-2 -m-2 transition-colors"
+            onClick={() => profile && setShowColorScience(true)}
+          >
+            <p className="text-[var(--gold-light)] text-xs uppercase tracking-widest mb-2">
+              色彩分析 {profile && <span className="text-[var(--gold)] ml-1">· 点击查看色彩科学 →</span>}
+            </p>
             <p className="text-gray-200 text-sm leading-relaxed">{data.colorAnalysis}</p>
           </div>
         </div>
@@ -550,16 +573,32 @@ export default function ResultsView({ data, onBack, profile }: Props) {
       </div>
 
       <div className="mt-12 pt-8 border-t-2 border-[var(--gold-light)]">
+        <CostPerWear data={data} />
+      </div>
+
+      <div className="mt-12 pt-8 border-t-2 border-[var(--gold-light)]">
         <StyleMoodboard data={data} />
       </div>
 
       <div className="flex justify-center gap-4 mt-12 mb-8 print:hidden flex-wrap">
         <button onClick={onBack} className="btn-gold">返回首页</button>
         <button
+          onClick={() => setShowOutfitBuilder(true)}
+          className="px-8 py-3 bg-[var(--noir)] text-[var(--gold-light)] rounded-lg font-semibold hover:bg-[var(--noir-light)] transition-all"
+        >
+          AI 穿搭模拟器
+        </button>
+        <button
           onClick={() => setShowCalendar(true)}
           className="px-8 py-3 border-2 border-[var(--gold)] text-[var(--gold-dark)] rounded-lg font-semibold hover:bg-[var(--gold)] hover:text-white transition-all"
         >
           穿搭日历
+        </button>
+        <button
+          onClick={() => setShowTravelCapsule(true)}
+          className="px-8 py-3 border-2 border-[var(--gold)] text-[var(--gold-dark)] rounded-lg font-semibold hover:bg-[var(--gold)] hover:text-white transition-all"
+        >
+          旅行胶囊衣橱
         </button>
         <button
           onClick={() => window.print()}
@@ -571,6 +610,28 @@ export default function ResultsView({ data, onBack, profile }: Props) {
 
       <StylistChat plan={data} />
     </div>
+
+    {showOutfitBuilder && (
+      <OutfitBuilder data={data} onClose={() => setShowOutfitBuilder(false)} />
+    )}
+
+    {showTravelCapsule && (
+      <TravelCapsule data={data} onClose={() => setShowTravelCapsule(false)} />
+    )}
+
+    {showColorScience && profile && (
+      <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setShowColorScience(false)}>
+        <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between p-5 border-b border-[var(--cream-dark)]">
+            <h2 className="text-lg font-bold">色彩科学分析</h2>
+            <button onClick={() => setShowColorScience(false)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 text-xl">×</button>
+          </div>
+          <div className="p-5">
+            <ColorScience profile={profile} colorAnalysis={data.colorAnalysis} />
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 }

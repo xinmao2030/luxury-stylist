@@ -9,6 +9,8 @@ interface ChatMessage {
   content: string;
 }
 
+const ERROR_MESSAGE = "抱歉，连接出现问题，请稍后重试。";
+
 function buildPlanContext(plan: FullStylingPlan): string {
   const lines: string[] = [];
   lines.push(`形象评估: ${plan.profileSummary}`);
@@ -58,12 +60,11 @@ export default function StylistChat({ plan }: Props) {
     }
   }, [open]);
 
-  const sendMessage = useCallback(async () => {
-    const text = input.trim();
+  const doSend = useCallback(async (text: string, existingMessages: ChatMessage[]) => {
     if (!text || streaming) return;
 
     const userMsg: ChatMessage = { role: "user", content: text };
-    const newMessages = [...messages, userMsg];
+    const newMessages = [...existingMessages, userMsg];
     setMessages(newMessages);
     setInput("");
     setStreaming(true);
@@ -127,7 +128,7 @@ export default function StylistChat({ plan }: Props) {
           const updated = [...prev];
           updated[updated.length - 1] = {
             role: "assistant",
-            content: "抱歉，连接出现问题，请稍后重试。",
+            content: ERROR_MESSAGE,
           };
           return updated;
         });
@@ -136,7 +137,28 @@ export default function StylistChat({ plan }: Props) {
       setStreaming(false);
       abortRef.current = null;
     }
-  }, [input, messages, plan, streaming]);
+  }, [plan, streaming]);
+
+  const sendMessage = useCallback(() => {
+    const text = input.trim();
+    if (!text) return;
+    doSend(text, messages);
+  }, [input, messages, doSend]);
+
+  const retryLastMessage = useCallback(() => {
+    if (streaming) return;
+    // Find the last user message
+    const lastUserIdx = messages.findLastIndex((m) => m.role === "user");
+    if (lastUserIdx === -1) return;
+    const lastUserText = messages[lastUserIdx].content;
+    // Remove the last user message and the error assistant message
+    const trimmed = messages.slice(0, lastUserIdx);
+    doSend(lastUserText, trimmed);
+  }, [messages, streaming, doSend]);
+
+  // Check if the last message is an error
+  const lastMsg = messages[messages.length - 1];
+  const hasError = lastMsg?.role === "assistant" && lastMsg.content === ERROR_MESSAGE;
 
   return (
     <>
@@ -180,7 +202,7 @@ export default function StylistChat({ plan }: Props) {
 
       {/* Chat panel */}
       {open && (
-        <div className="fixed bottom-24 right-6 z-40 w-[400px] max-h-[520px] bg-white rounded-2xl shadow-2xl border border-[var(--cream-dark)] flex flex-col overflow-hidden animate-in slide-in-from-bottom-4">
+        <div className="fixed bottom-24 right-6 z-40 w-[400px] max-w-[calc(100vw-2rem)] max-h-[520px] bg-white rounded-2xl shadow-2xl border border-[var(--cream-dark)] flex flex-col overflow-hidden animate-in slide-in-from-bottom-4">
           {/* Panel header */}
           <div className="luxury-gradient text-white px-5 py-3 flex items-center justify-between flex-shrink-0">
             <div>
@@ -227,7 +249,19 @@ export default function StylistChat({ plan }: Props) {
                       : "bg-[var(--cream)] text-[var(--noir)] rounded-bl-md"
                   }`}
                 >
-                  {msg.content || (
+                  {msg.content === ERROR_MESSAGE ? (
+                    <span className="flex items-center gap-2 flex-wrap">
+                      <span>{msg.content}</span>
+                      <button
+                        onClick={retryLastMessage}
+                        className="text-xs text-[var(--gold)] hover:underline font-medium whitespace-nowrap"
+                      >
+                        重试
+                      </button>
+                    </span>
+                  ) : msg.content ? (
+                    msg.content
+                  ) : (
                     <span className="inline-flex gap-1">
                       <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" />
                       <span

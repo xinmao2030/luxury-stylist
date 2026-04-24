@@ -19,6 +19,12 @@ import TravelCapsule from "./TravelCapsule";
 import ColorScience from "./ColorScience";
 import OutfitBuilder from "./OutfitBuilder";
 import SmartPurchase from "./SmartPurchase";
+import WeatherOutfit from "./WeatherOutfit";
+import StyleDNA from "./StyleDNA";
+import ShareCard from "./ShareCard";
+import TrendRadar from "./TrendRadar";
+import DailyChallenge from "./DailyChallenge";
+import { checkAndUnlock } from "./StyleAchievements";
 
 type CurrencyCode = "USD" | "CNY" | "EUR" | "GBP" | "JPY" | "HKD";
 
@@ -446,6 +452,11 @@ export default function ResultsView({ data, onBack, profile }: Props) {
   const [showTravelCapsule, setShowTravelCapsule] = useState(false);
   const [showColorScience, setShowColorScience] = useState(false);
   const [showOutfitBuilder, setShowOutfitBuilder] = useState(false);
+  const [showWeatherOutfit, setShowWeatherOutfit] = useState(false);
+  const [showStyleDNA, setShowStyleDNA] = useState(false);
+  const [showShareCard, setShowShareCard] = useState(false);
+  const [showTrendRadar, setShowTrendRadar] = useState(false);
+  const [showDailyChallenge, setShowDailyChallenge] = useState(false);
   const [shareToast, setShareToast] = useState(false);
 
   useEffect(() => {
@@ -501,7 +512,7 @@ export default function ResultsView({ data, onBack, profile }: Props) {
           <h2 className="text-3xl font-bold gold-text">您的专属形象方案</h2>
           <div className="flex items-center gap-3 flex-shrink-0">
             <button
-              onClick={handleShare}
+              onClick={() => setShowShareCard(true)}
               className="px-4 py-1.5 border border-[var(--gold-light)] text-[var(--gold-light)] rounded-lg text-sm hover:bg-[var(--gold-light)] hover:text-[var(--noir)] transition-all"
             >
               分享
@@ -580,29 +591,57 @@ export default function ResultsView({ data, onBack, profile }: Props) {
         <StyleMoodboard data={data} />
       </div>
 
-      <div className="flex justify-center gap-4 mt-12 mb-8 print:hidden flex-wrap">
+      {/* Style DNA */}
+      {profile && (
+        <div className="mt-12 pt-8 border-t-2 border-[var(--gold-light)]">
+          <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <span className="text-2xl">🧬</span> 个人风格 DNA
+          </h3>
+          <StyleDNA data={data} profile={profile} />
+        </div>
+      )}
+
+      <div className="flex justify-center gap-3 mt-12 mb-8 print:hidden flex-wrap">
         <button onClick={onBack} className="btn-gold">返回首页</button>
         <button
           onClick={() => setShowOutfitBuilder(true)}
-          className="px-8 py-3 bg-[var(--noir)] text-[var(--gold-light)] rounded-lg font-semibold hover:bg-[var(--noir-light)] transition-all"
+          className="px-6 py-3 bg-[var(--noir)] text-[var(--gold-light)] rounded-lg font-semibold hover:bg-[var(--noir-light)] transition-all text-sm"
         >
           AI 穿搭模拟器
         </button>
         <button
-          onClick={() => setShowCalendar(true)}
-          className="px-8 py-3 border-2 border-[var(--gold)] text-[var(--gold-dark)] rounded-lg font-semibold hover:bg-[var(--gold)] hover:text-white transition-all"
+          onClick={() => { setShowWeatherOutfit(true); checkAndUnlock("weather_outfit"); }}
+          className="px-6 py-3 bg-[var(--noir)] text-[var(--gold-light)] rounded-lg font-semibold hover:bg-[var(--noir-light)] transition-all text-sm"
+        >
+          天气穿搭
+        </button>
+        <button
+          onClick={() => { setShowCalendar(true); checkAndUnlock("outfit_calendar"); }}
+          className="px-6 py-3 border-2 border-[var(--gold)] text-[var(--gold-dark)] rounded-lg font-semibold hover:bg-[var(--gold)] hover:text-white transition-all text-sm"
         >
           穿搭日历
         </button>
         <button
-          onClick={() => setShowTravelCapsule(true)}
-          className="px-8 py-3 border-2 border-[var(--gold)] text-[var(--gold-dark)] rounded-lg font-semibold hover:bg-[var(--gold)] hover:text-white transition-all"
+          onClick={() => { setShowTravelCapsule(true); checkAndUnlock("travel_capsule"); }}
+          className="px-6 py-3 border-2 border-[var(--gold)] text-[var(--gold-dark)] rounded-lg font-semibold hover:bg-[var(--gold)] hover:text-white transition-all text-sm"
         >
           旅行胶囊衣橱
         </button>
         <button
+          onClick={() => { setShowTrendRadar(true); }}
+          className="px-6 py-3 border-2 border-[var(--gold)] text-[var(--gold-dark)] rounded-lg font-semibold hover:bg-[var(--gold)] hover:text-white transition-all text-sm"
+        >
+          潮流雷达
+        </button>
+        <button
+          onClick={() => { setShowDailyChallenge(true); }}
+          className="px-6 py-3 border-2 border-[var(--gold)] text-[var(--gold-dark)] rounded-lg font-semibold hover:bg-[var(--gold)] hover:text-white transition-all text-sm"
+        >
+          每日挑战
+        </button>
+        <button
           onClick={() => window.print()}
-          className="px-8 py-3 border-2 border-[var(--gold)] text-[var(--gold-dark)] rounded-lg font-semibold hover:bg-[var(--gold)] hover:text-white transition-all"
+          className="px-6 py-3 border-2 border-[var(--gold)] text-[var(--gold-dark)] rounded-lg font-semibold hover:bg-[var(--gold)] hover:text-white transition-all text-sm"
         >
           导出PDF
         </button>
@@ -631,6 +670,22 @@ export default function ResultsView({ data, onBack, profile }: Props) {
           </div>
         </div>
       </div>
+    )}
+
+    {showWeatherOutfit && (
+      <WeatherOutfit data={data} onClose={() => setShowWeatherOutfit(false)} />
+    )}
+
+    {showShareCard && (
+      <ShareCard data={data} onClose={() => setShowShareCard(false)} />
+    )}
+
+    {showTrendRadar && profile && (
+      <TrendRadar data={data} profile={profile} onClose={() => setShowTrendRadar(false)} />
+    )}
+
+    {showDailyChallenge && (
+      <DailyChallenge data={data} onClose={() => setShowDailyChallenge(false)} />
     )}
     </>
   );

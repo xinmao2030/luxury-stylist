@@ -9,6 +9,12 @@ import CompareView from "@/components/CompareView";
 import type { UserProfile, FullStylingPlan } from "@/lib/types";
 import { localStorageHelper } from "@/lib/utils";
 import MyWardrobe from "@/components/MyWardrobe";
+import StyleAchievements, { AchievementBadge, AchievementToast, checkAndUnlock } from "@/components/StyleAchievements";
+import type { Achievement } from "@/components/StyleAchievements";
+import VisualSearch from "@/components/VisualSearch";
+import WardrobeAnalytics from "@/components/WardrobeAnalytics";
+import ShareCard from "@/components/ShareCard";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 export interface SavedReport {
   id: string;
@@ -33,6 +39,11 @@ export default function Home() {
   const streamRef = useRef<HTMLDivElement>(null);
   const [compareReports, setCompareReports] = useState<[SavedReport, SavedReport] | null>(null);
   const [showWardrobe, setShowWardrobe] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(false);
+  const [showVisualSearch, setShowVisualSearch] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [achievementToast, setAchievementToast] = useState<Achievement | null>(null);
+  const submittingRef = useRef(false);
 
   useEffect(() => {
     setReports(loadReports());
@@ -46,6 +57,9 @@ export default function Home() {
   }, [streamText]);
 
   const handleSubmit = useCallback(async (profile: UserProfile) => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+
     setError("");
     setStreamText("");
     setView("loading");
@@ -114,6 +128,13 @@ export default function Home() {
               saveReports(updated);
               setReports(updated);
 
+              const a = checkAndUnlock("first_plan");
+              if (a) setAchievementToast(a);
+              if (updated.length >= 5) {
+                const a2 = checkAndUnlock("plans_5");
+                if (a2) setTimeout(() => setAchievementToast(a2), 3500);
+              }
+
               setResult(evt.data);
               setView("results");
               setStreamText("");
@@ -140,7 +161,7 @@ export default function Home() {
       setView("form");
       setStreamText("");
     } finally {
-      // view is already set by success/error handlers
+      submittingRef.current = false;
     }
   }, [reports]);
 
@@ -175,6 +196,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen">
+    <ErrorBoundary>
       {/* Header */}
       <header className="luxury-gradient text-white py-6 px-8 mb-8">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
@@ -197,11 +219,24 @@ export default function Home() {
             )}
             {view === "home" && (
               <>
+                <AchievementBadge onClick={() => setShowAchievements(true)} />
+                <button
+                  onClick={() => setShowVisualSearch(true)}
+                  className="text-[var(--gold-light)] hover:text-white text-sm transition-colors"
+                >
+                  以图搜款
+                </button>
                 <button
                   onClick={() => setShowWardrobe(true)}
                   className="text-[var(--gold-light)] hover:text-white text-sm transition-colors"
                 >
                   我的衣橱
+                </button>
+                <button
+                  onClick={() => setShowAnalytics(true)}
+                  className="text-[var(--gold-light)] hover:text-white text-sm transition-colors"
+                >
+                  衣橱分析
                 </button>
                 <button
                   onClick={() => setView("favorites")}
@@ -304,6 +339,26 @@ export default function Home() {
       {showWardrobe && (
         <MyWardrobe onClose={() => setShowWardrobe(false)} />
       )}
+
+      {showVisualSearch && (
+        <VisualSearch onClose={() => setShowVisualSearch(false)} />
+      )}
+
+      {showAnalytics && (
+        <WardrobeAnalytics onClose={() => setShowAnalytics(false)} />
+      )}
+
+      {showAchievements && (
+        <StyleAchievements onClose={() => setShowAchievements(false)} />
+      )}
+
+      {achievementToast && (
+        <AchievementToast
+          achievement={achievementToast}
+          onDismiss={() => setAchievementToast(null)}
+        />
+      )}
+    </ErrorBoundary>
     </main>
   );
 }

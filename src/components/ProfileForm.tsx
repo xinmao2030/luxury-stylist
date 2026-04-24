@@ -133,14 +133,44 @@ function TagInput({
   );
 }
 
+type ValidationErrors = Record<string, string>;
+
+function validateStep(step: number, profile: UserProfile): ValidationErrors {
+  const errors: ValidationErrors = {};
+  if (step === 0) {
+    if (!profile.name.trim()) errors.name = "请输入称呼";
+    if (profile.age < 10 || profile.age > 100) errors.age = "年龄需在 10-100 之间";
+  }
+  if (step === 1) {
+    if (profile.height < 100 || profile.height > 250) errors.height = "身高需在 100-250 cm 之间";
+    if (profile.weight < 30 || profile.weight > 300) errors.weight = "体重需在 30-300 kg 之间";
+  }
+  if (step === 3) {
+    if (profile.monthlyBudget < 100) errors.monthlyBudget = "月预算不能低于 100";
+  }
+  return errors;
+}
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return <p className="text-red-500 text-xs mt-1">{message}</p>;
+}
+
 export default function ProfileForm({ onSubmit, loading }: Props) {
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [step, setStep] = useState(0);
   const [showQuiz, setShowQuiz] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState<ValidationErrors>({});
   const formRef = useRef<HTMLDivElement>(null);
 
-  const update = <K extends keyof UserProfile>(key: K, val: UserProfile[K]) =>
-    setProfile((p) => ({ ...p, [key]: val }));
+  const update = <K extends keyof UserProfile>(key: K, val: UserProfile[K]) => {
+    setProfile((p) => {
+      const next = { ...p, [key]: val };
+      setErrors(validateStep(step, next));
+      return next;
+    });
+  };
 
   const handleFormKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -195,6 +225,7 @@ export default function ProfileForm({ onSubmit, loading }: Props) {
               placeholder="您的称呼"
               className="w-full"
             />
+            <FieldError message={errors.name} />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">年龄</label>
@@ -204,6 +235,7 @@ export default function ProfileForm({ onSubmit, loading }: Props) {
               onChange={(e) => update("age", +e.target.value)}
               className="w-full"
             />
+            <FieldError message={errors.age} />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">性别</label>
@@ -249,6 +281,7 @@ export default function ProfileForm({ onSubmit, loading }: Props) {
               onChange={(e) => update("height", +e.target.value)}
               className="w-full"
             />
+            <FieldError message={errors.height} />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">体重 (kg)</label>
@@ -258,6 +291,7 @@ export default function ProfileForm({ onSubmit, loading }: Props) {
               onChange={(e) => update("weight", +e.target.value)}
               className="w-full"
             />
+            <FieldError message={errors.weight} />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">体型</label>
@@ -402,6 +436,7 @@ export default function ProfileForm({ onSubmit, loading }: Props) {
                 onChange={(e) => update("monthlyBudget", +e.target.value)}
                 className="w-full"
               />
+              <FieldError message={errors.monthlyBudget} />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">货币</label>
@@ -573,7 +608,13 @@ export default function ProfileForm({ onSubmit, loading }: Props) {
         <div className="flex justify-between mt-8">
           <button
             type="button"
-            onClick={() => setStep((s) => s - 1)}
+            onClick={() => {
+              setStep((s) => {
+                const prev = s - 1;
+                setErrors(validateStep(prev, profile));
+                return prev;
+              });
+            }}
             className={`px-6 py-2.5 rounded-lg text-sm ${
               step === 0 ? "invisible" : "bg-[var(--cream-dark)] hover:bg-gray-200"
             }`}
@@ -583,15 +624,42 @@ export default function ProfileForm({ onSubmit, loading }: Props) {
           {isLast ? (
             <button
               className="btn-gold"
-              disabled={loading || !profile.name}
-              onClick={() => onSubmit(profile)}
+              disabled={loading || submitting || !profile.name.trim() || Object.keys(validateStep(step, profile)).length > 0}
+              onClick={async () => {
+                const stepErrors = validateStep(step, profile);
+                if (Object.keys(stepErrors).length > 0) {
+                  setErrors(stepErrors);
+                  return;
+                }
+                const trimmedProfile = { ...profile, name: profile.name.trim() };
+                setSubmitting(true);
+                try {
+                  await onSubmit(trimmedProfile);
+                } catch {
+                  // re-enable on error
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
             >
-              {loading ? "AI 分析中..." : "生成专属方案"}
+              {loading || submitting ? "AI 分析中..." : "生成专属方案"}
             </button>
           ) : (
             <button
               className="btn-gold"
-              onClick={() => setStep((s) => s + 1)}
+              disabled={Object.keys(validateStep(step, profile)).length > 0}
+              onClick={() => {
+                const stepErrors = validateStep(step, profile);
+                if (Object.keys(stepErrors).length > 0) {
+                  setErrors(stepErrors);
+                  return;
+                }
+                setStep((s) => {
+                  const next = s + 1;
+                  setErrors(validateStep(next, profile));
+                  return next;
+                });
+              }}
             >
               下一步
             </button>

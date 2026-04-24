@@ -41,6 +41,15 @@ export default function ProductImage({
     return () => controller.abort();
   }, [query]);
 
+  // 10-second timeout: if the image hasn't loaded, show brand initial fallback
+  useEffect(() => {
+    if (loaded || error || images.length === 0) return;
+    const timer = setTimeout(() => {
+      if (!loaded) setError(true);
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, [loaded, error, images.length, activeIdx]);
+
   if (error || images.length === 0) {
     return (
       <div className={`w-full ${heightClass} bg-gradient-to-br from-[var(--cream-dark)] to-[var(--cream)] flex items-center justify-center`}>

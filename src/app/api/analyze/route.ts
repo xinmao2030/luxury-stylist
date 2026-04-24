@@ -4,6 +4,42 @@ import type { UserProfile } from "@/lib/types";
 import { OLLAMA_URL, OLLAMA_MODEL, SSE_HEADERS } from "@/lib/constants";
 import { stripThinkTags } from "@/lib/utils";
 
+function validateAIResponse(data: Record<string, unknown>): Record<string, unknown> {
+  const safeString = (val: unknown, fallback = "暂无分析"): string =>
+    typeof val === "string" && val.trim() ? val : fallback;
+
+  const result: Record<string, unknown> = { ...data };
+
+  result.profileSummary = safeString(data.profileSummary);
+  result.bodyAnalysis = safeString(data.bodyAnalysis);
+  result.colorAnalysis = safeString(data.colorAnalysis);
+  result.styleDirection = safeString(data.styleDirection);
+
+  const recs = typeof data.recommendations === "object" && data.recommendations !== null
+    ? (data.recommendations as Record<string, unknown>)
+    : {};
+
+  const validatedRecs: Record<string, unknown> = {};
+  for (const [key, cat] of Object.entries(recs)) {
+    const catObj = typeof cat === "object" && cat !== null ? (cat as Record<string, unknown>) : {};
+    const rawItems = Array.isArray(catObj.items) ? catObj.items : [];
+    const validatedItems = rawItems.map((item: unknown) => {
+      const it = typeof item === "object" && item !== null ? (item as Record<string, unknown>) : {};
+      return {
+        ...it,
+        brand: safeString(it.brand, "未知"),
+        itemName: safeString(it.itemName, "未知"),
+        price: safeString(it.price, "未知"),
+        priceUSD: typeof it.priceUSD === "number" ? it.priceUSD : 0,
+      };
+    });
+    validatedRecs[key] = { ...catObj, items: validatedItems };
+  }
+  result.recommendations = validatedRecs;
+
+  return result;
+}
+
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
@@ -75,7 +111,7 @@ export async function POST(req: NextRequest) {
               .replace(/```json\n?/g, "")
               .replace(/```\n?/g, "")
               .trim();
-            parsed = JSON.parse(cleaned);
+            parsed = validateAIResponse(JSON.parse(cleaned));
           } catch {
             parsed = { raw: fullText, parseError: true };
           }

@@ -19,4 +19,4 @@ export const SSE_HEADERS = {
 } as const;
 
 export const OLLAMA_URL = "http://localhost:11434/api/chat";
-export const OLLAMA_MODEL = "qwen3:8b";
+export const OLLAMA_MODEL = "qwen3:32b";

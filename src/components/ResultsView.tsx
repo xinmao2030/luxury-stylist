@@ -24,6 +24,9 @@ import StyleDNA from "./StyleDNA";
 import ShareCard from "./ShareCard";
 import TrendRadar from "./TrendRadar";
 import DailyChallenge from "./DailyChallenge";
+import OutfitRating from "./OutfitRating";
+import OccasionCapsule from "./OccasionCapsule";
+import SizeGuide from "./SizeGuide";
 import { checkAndUnlock } from "./StyleAchievements";
 
 type CurrencyCode = "USD" | "CNY" | "EUR" | "GBP" | "JPY" | "HKD";
@@ -457,6 +460,9 @@ export default function ResultsView({ data, onBack, profile }: Props) {
   const [showShareCard, setShowShareCard] = useState(false);
   const [showTrendRadar, setShowTrendRadar] = useState(false);
   const [showDailyChallenge, setShowDailyChallenge] = useState(false);
+  const [showOutfitRating, setShowOutfitRating] = useState(false);
+  const [showOccasionCapsule, setShowOccasionCapsule] = useState(false);
+  const [showSizeGuide, setShowSizeGuide] = useState(false);
   const [shareToast, setShareToast] = useState(false);
 
   useEffect(() => {
@@ -640,6 +646,24 @@ export default function ResultsView({ data, onBack, profile }: Props) {
           每日挑战
         </button>
         <button
+          onClick={() => setShowOccasionCapsule(true)}
+          className="px-6 py-3 border-2 border-[var(--gold)] text-[var(--gold-dark)] rounded-lg font-semibold hover:bg-[var(--gold)] hover:text-white transition-all text-sm"
+        >
+          场景穿搭
+        </button>
+        <button
+          onClick={() => setShowSizeGuide(true)}
+          className="px-6 py-3 border-2 border-[var(--gold)] text-[var(--gold-dark)] rounded-lg font-semibold hover:bg-[var(--gold)] hover:text-white transition-all text-sm"
+        >
+          尺码指南
+        </button>
+        <button
+          onClick={() => setShowOutfitRating(true)}
+          className="px-6 py-3 bg-[var(--gold)] text-white rounded-lg font-semibold hover:opacity-90 transition-all text-sm"
+        >
+          评价方案
+        </button>
+        <button
           onClick={() => window.print()}
           className="px-6 py-3 border-2 border-[var(--gold)] text-[var(--gold-dark)] rounded-lg font-semibold hover:bg-[var(--gold)] hover:text-white transition-all text-sm"
         >
@@ -686,6 +710,22 @@ export default function ResultsView({ data, onBack, profile }: Props) {
 
     {showDailyChallenge && (
       <DailyChallenge data={data} onClose={() => setShowDailyChallenge(false)} />
+    )}
+
+    {showOutfitRating && (
+      <OutfitRating
+        data={data}
+        reportId={data.profileSummary?.slice(0, 20) || "current"}
+        onClose={() => setShowOutfitRating(false)}
+      />
+    )}
+
+    {showOccasionCapsule && (
+      <OccasionCapsule data={data} onClose={() => setShowOccasionCapsule(false)} />
+    )}
+
+    {showSizeGuide && (
+      <SizeGuide profile={profile} onClose={() => setShowSizeGuide(false)} />
     )}
     </>
   );

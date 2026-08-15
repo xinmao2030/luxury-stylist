@@ -18,5 +18,9 @@ export const SSE_HEADERS = {
   Connection: "keep-alive",
 } as const;
 
-export const OLLAMA_URL = "http://localhost:11434/api/chat";
-export const OLLAMA_MODEL = "qwen3:32b";
+export const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || "";
+export const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || "deepseek-chat";
+export const DEEPSEEK_BASE_URL = process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com/v1";
+
+export const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434/api/chat";
+export const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "qwen3:32b";

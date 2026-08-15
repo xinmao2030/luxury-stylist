@@ -15,6 +15,8 @@ import VisualSearch from "@/components/VisualSearch";
 import WardrobeAnalytics from "@/components/WardrobeAnalytics";
 import ShareCard from "@/components/ShareCard";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import StyleTimeline from "@/components/StyleTimeline";
+import { RatingSummary } from "@/components/OutfitRating";
 
 export interface SavedReport {
   id: string;
@@ -42,6 +44,7 @@ export default function Home() {
   const [showAchievements, setShowAchievements] = useState(false);
   const [showVisualSearch, setShowVisualSearch] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showTimeline, setShowTimeline] = useState(false);
   const [achievementToast, setAchievementToast] = useState<Achievement | null>(null);
   const submittingRef = useRef(false);
 
@@ -239,6 +242,12 @@ export default function Home() {
                   衣橱分析
                 </button>
                 <button
+                  onClick={() => setShowTimeline(true)}
+                  className="text-[var(--gold-light)] hover:text-white text-sm transition-colors"
+                >
+                  风格演变
+                </button>
+                <button
                   onClick={() => setView("favorites")}
                   className="text-[var(--gold-light)] hover:text-white text-sm transition-colors"
                 >
@@ -272,14 +281,19 @@ export default function Home() {
 
         {/* Home — Report History */}
         {view === "home" && (
-          <ReportHistory
-            reports={reports}
-            onView={viewReport}
-            onDelete={deleteReport}
-            onDeleteAll={deleteAllReports}
-            onNew={() => setView("form")}
-            onCompare={handleCompare}
-          />
+          <>
+            <div className="max-w-5xl mx-auto mb-6">
+              <RatingSummary />
+            </div>
+            <ReportHistory
+              reports={reports}
+              onView={viewReport}
+              onDelete={deleteReport}
+              onDeleteAll={deleteAllReports}
+              onNew={() => setView("form")}
+              onCompare={handleCompare}
+            />
+          </>
         )}
 
         {/* Form */}
@@ -346,6 +360,10 @@ export default function Home() {
 
       {showAnalytics && (
         <WardrobeAnalytics onClose={() => setShowAnalytics(false)} />
+      )}
+
+      {showTimeline && (
+        <StyleTimeline onClose={() => setShowTimeline(false)} />
       )}
 
       {showAchievements && (
